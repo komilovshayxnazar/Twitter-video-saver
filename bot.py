@@ -124,11 +124,17 @@ if __name__ == '__main__':
                 self.wfile.write(b"OK")
 
         def run_health_check_server():
-            port = int(os.environ.get('PORT', 8000))
-            server_address = ('0.0.0.0', port)
-            httpd = HTTPServer(server_address, HealthCheckHandler)
-            print(f"Health check server running on port {port}")
-            httpd.serve_forever()
+            ports = [int(os.environ.get('PORT', 8000)), 8080, 5000, 3000]
+            for port in ports:
+                try:
+                    server_address = ('0.0.0.0', port)
+                    httpd = HTTPServer(server_address, HealthCheckHandler)
+                    print(f"Health check server running on port {port}", flush=True)
+                    httpd.serve_forever()
+                    return
+                except OSError as e:
+                    print(f"Failed to bind to port {port}: {e}", flush=True)
+            print("CRITICAL: Could not bind to any port for health check.", flush=True)
 
         threading.Thread(target=run_health_check_server, daemon=True).start()
 
