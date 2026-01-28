@@ -113,8 +113,27 @@ if __name__ == '__main__':
         start_handler = CommandHandler('start', start)
         message_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), handle_message)
         
+        # Start a dummy web server for health checks
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        import threading
+
+        class HealthCheckHandler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"OK")
+
+        def run_health_check_server():
+            port = int(os.environ.get('PORT', 8000))
+            server_address = ('0.0.0.0', port)
+            httpd = HTTPServer(server_address, HealthCheckHandler)
+            print(f"Health check server running on port {port}")
+            httpd.serve_forever()
+
+        threading.Thread(target=run_health_check_server, daemon=True).start()
+
         application.add_handler(start_handler)
         application.add_handler(message_handler)
         
         print("Bot is running...")
-        application.run_polling()
+        application.run_polling(allowed_updates=Update.ALL_TYPES)
