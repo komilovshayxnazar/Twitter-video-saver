@@ -142,32 +142,36 @@ if __name__ == '__main__':
         application.add_handler(message_handler)
         
         print("Bot is running...")
-        # Error handler to log errors but keep bot alive if possible
-        async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
-            logging.error(f"Exception while handling an update: {context.error}")
-            if isinstance(context.error, Conflict):
-                logging.warning("Conflict error detected in error handler. Sleeping for 10s...")
-                await asyncio.sleep(10)
+    # Error handler to log errors but keep bot alive if possible
+    async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        logging.error(f"Exception while handling an update: {context.error}")
+        import traceback
+        logging.error(traceback.format_exc())
+        if isinstance(context.error, Conflict):
+            logging.warning("Conflict error detected in error handler. Sleeping for 10s...")
+            await asyncio.sleep(10)
 
-        application.add_error_handler(error_handler)
+    application.add_error_handler(error_handler)
 
-        print("Bot is running...")
-        
-        # Retry loop for conflict handling (still needed if run_polling exits)
-        import time
-        from telegram.error import Conflict
+    print("Bot is running...")
+    
+    # Retry loop for conflict handling (still needed if run_polling exits)
+    import time
+    import traceback
+    from telegram.error import Conflict
 
-        while True:
-            try:
-                # allowed_updates=None is default (all types)
-                application.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
-                print("Polling stopped cleanly.")
-                break 
-            except Conflict:
-                print("Caught Conflict in main loop. Restarting polling in 10s...")
-                time.sleep(10)
-            except Exception as e:
-                print(f"Caught unexpected error in main loop: {e}")
-                time.sleep(5)
-                # If it keeps crashing, we want to retry, not exit
-                continue
+    while True:
+        try:
+            # allowed_updates=None is default (all types)
+            application.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
+            print("Polling stopped cleanly.")
+            break 
+        except Conflict:
+            print("Caught Conflict in main loop. Restarting polling in 10s...")
+            time.sleep(10)
+        except Exception as e:
+            print(f"Caught unexpected error in main loop: {e}")
+            traceback.print_exc()
+            time.sleep(5)
+            # If it keeps crashing, we want to retry, not exit
+            continue
