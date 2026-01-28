@@ -136,4 +136,4 @@ if __name__ == '__main__':
         application.add_handler(message_handler)
         
         print("Bot is running...")
-        application.run_polling(allowed_updates=Update.ALL_TYPES)
+        application.run_polling()
