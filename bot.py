@@ -136,26 +136,32 @@ if __name__ == '__main__':
         application.add_handler(message_handler)
         
         print("Bot is running...")
+        # Error handler to log errors but keep bot alive if possible
+        async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+            logging.error(f"Exception while handling an update: {context.error}")
+            if isinstance(context.error, Conflict):
+                logging.warning("Conflict error detected in error handler. Sleeping for 10s...")
+                await asyncio.sleep(10)
+
+        application.add_error_handler(error_handler)
+
         print("Bot is running...")
         
-        # Retry loop for conflict handling
+        # Retry loop for conflict handling (still needed if run_polling exits)
         import time
         from telegram.error import Conflict
 
         while True:
             try:
-                application.run_polling()
-                break # If run_polling returns cleanly (e.g. signal), exit loop
+                # allowed_updates=None is default (all types)
+                application.run_polling(allowed_updates=Update.ALL_TYPES, close_loop=False)
+                print("Polling stopped cleanly.")
+                break 
             except Conflict:
-                print("=========================================")
-                print("ERROR: CONFLICT DETECTED")
-                print("Another instance of this bot is running.")
-                print("Waiting 10 seconds before retrying...")
-                print("Please STOP the other instance (Local PC, other Replit tab, etc.)")
-                print("=========================================")
+                print("Caught Conflict in main loop. Restarting polling in 10s...")
                 time.sleep(10)
             except Exception as e:
-                print(f"Unexpected error: {e}")
+                print(f"Caught unexpected error in main loop: {e}")
                 time.sleep(5)
-                # Depending on severity we might want to break or retry
-                break
+                # If it keeps crashing, we want to retry, not exit
+                continue
