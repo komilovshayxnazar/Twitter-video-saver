@@ -136,4 +136,26 @@ if __name__ == '__main__':
         application.add_handler(message_handler)
         
         print("Bot is running...")
-        application.run_polling()
+        print("Bot is running...")
+        
+        # Retry loop for conflict handling
+        import time
+        from telegram.error import Conflict
+
+        while True:
+            try:
+                application.run_polling()
+                break # If run_polling returns cleanly (e.g. signal), exit loop
+            except Conflict:
+                print("=========================================")
+                print("ERROR: CONFLICT DETECTED")
+                print("Another instance of this bot is running.")
+                print("Waiting 10 seconds before retrying...")
+                print("Please STOP the other instance (Local PC, other Replit tab, etc.)")
+                print("=========================================")
+                time.sleep(10)
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+                time.sleep(5)
+                # Depending on severity we might want to break or retry
+                break
